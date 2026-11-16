@@ -1,17 +1,24 @@
-# DKV Circuit Lab 3D — V0.7.0 Studio UI
+# DKV Circuit Lab 3D — V0.8.0 (ESP32-C3 Detailed Board)
 
-## Các thay đổi
-- Thiết kế lại inspector bên phải theo bố cục kỹ thuật hai tầng (thông tin linh kiện / code editor), tham khảo cách tổ chức của ảnh Learn ESP32 nhưng không sao chép nội dung hoặc giao diện nguyên bản.
-- 4 tab Tổng quan / Chân / Ví dụ / Thông số; nội dung phụ thuộc linh kiện được chọn.
-- Code Editor luôn hiển thị, hỗ trợ chỉnh sửa, sao chép, mở rộng. **Chưa biên dịch/chạy code C++**; nút Play chỉ bật/tắt chế độ mô phỏng logic GPIO.
-- Camera isometric không xoay tự do. Cho phép pan, zoom, đặt lại góc và preset nhìn trên.
-- Giữ logo DKV, trắng–xanh, xóa linh kiện bằng nút hoặc Delete, JSON nhập/xuất và localStorage.
-- Không có bài học, Supabase, tài khoản hoặc đăng nhập.
+Website React/Vite/Three.js 3D, public, no login, no Supabase.
+
+## What's new
+- Integrated user-supplied Esp32C3Board.tsx and ESP32-C3-DevKitM-1 pin data.
+- 30 independently clickable pins (`J1-01` through `J3-15`), wired via `partId:pinId`.
+- Old saved projects with virtual pins GPIO2, GPIO4, GND and 3V3 are migrated when loaded.
+- GPIO2 demo circuit uses J1-04 and J1-01 GND.
+- Enhanced PCB details: SMDs, antenna, USB shell, metal contacts and silk labels.
+- Camera rotation 360 enabled again, with zoom/pan and reset.
+- Retains white/blue UI, inspector, project import/export, delete-part operation and no grid.
+
+## Limits
+- Board shape and pin location are visual approximations, NOT verified manufacture-accurate PCB footprints; verify orientation with Espressif datasheet before relying on electrical pin placement.
+- This is not ESP32-C3 Super Mini; it is a model of ESP32-C3-DevKitM-1.
+- No Arduino C++ execution: the Run button toggles a virtual GPIO state only.
+- Models are procedurally drawn by Three.js, not scanned photorealistic GLB assets.
+
+## Install / build
+`npm install` then `npm run build` (Vite outputs `dist/`).
 
 ## Deploy
-1. Thay **toàn bộ** nội dung repository bằng nội dung thư mục này (đừng tải cả thư mục làm thư mục con).
-2. Xóa `src/supabase.ts` và `supabase/` trên GitHub nếu còn sót từ bản cũ.
-3. `npm install`, `npm run build` rồi push GitHub. Vercel dùng Vite (`dist`).
-
-## Giới hạn
-Mô hình 3D dùng hình học Three.js do dự án dựng. Pinout rút gọn và chưa có bộ giải mạch điện, đo dòng/áp, hoặc mô phỏng firmware ESP32 thực tế. Không dùng để chứng nhận lắp mạch an toàn.
+Replace the repository root with this package and delete any stale `src/supabase.ts` left by old uploads. Push to GitHub and Vercel will redeploy.

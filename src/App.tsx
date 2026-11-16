@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { Html, OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
+import Esp32C3Board from './boards/Esp32C3Board';
+import { C3_PINS, C3_PIN_BY_ID } from './boards/esp32c3-devkitm1.pins';
 import { Box, CircuitBoard, Download, FileUp, FolderOpen, Home, Info, Menu, Play, RotateCcw, Save, Search, Settings2, Trash2, Unplug, X, Zap, ZoomIn, ZoomOut, Copy, Maximize2, Cpu, Wifi, Cable, Activity, ChevronDown } from 'lucide-react';
 
 type Kind = 'esp32'|'breadboard'|'led'|'resistor'|'potentiometer'|'button';
@@ -10,22 +12,33 @@ type Wire = { from:string; to:string };
 type Project = { parts:Part[]; wires:Wire[]; gpioHigh:boolean; title:string };
 type Tab = 'overview'|'pins'|'example'|'specs';
 type Section = 'workspace'|'parts';
-const KEY='dkv-circuit-lab-v02'; // Tương thích dự án đã lưu từ các bản trước
+const KEY='dkv-circuit-lab-v02'; // Migrate old projects to the new 30-pin ESP32-C3 model
 const CATALOG: Record<Kind,{name:string;subtitle:string;icon:string}> = {
  esp32:{name:'ESP32-C3',subtitle:'Vi điều khiển',icon:'▣'},breadboard:{name:'Breadboard',subtitle:'Bảng cắm thử',icon:'▤'},led:{name:'LED đỏ',subtitle:'Đèn phát sáng',icon:'●'},resistor:{name:'Điện trở 220Ω',subtitle:'Giới hạn dòng',icon:'▰'},potentiometer:{name:'Biến trở 10kΩ',subtitle:'Điều chỉnh analog',icon:'◉'},button:{name:'Nút nhấn',subtitle:'Đóng/ngắt mạch',icon:'▢'}
 };
 const PIN_DEF: Record<Kind,{name:string;x:number;z:number}[]> = {
- esp32:[{name:'GPIO2',x:-.75,z:.53},{name:'GPIO4',x:-.30,z:.53},{name:'3V3',x:.25,z:.53},{name:'GND',x:.77,z:.53}],
+ esp32:C3_PINS.map(p=>({name:p.id,x:p.x,z:p.z})),
  breadboard:[{name:'A1',x:-.75,z:.47},{name:'A2',x:-.25,z:.47},{name:'B1',x:.25,z:.47},{name:'B2',x:.75,z:.47}],
  led:[{name:'A',x:-.30,z:.39},{name:'K',x:.30,z:.39}],resistor:[{name:'1',x:-.53,z:.32},{name:'2',x:.53,z:.32}],
  potentiometer:[{name:'VCC',x:-.58,z:.40},{name:'SIG',x:0,z:.40},{name:'GND',x:.58,z:.40}],button:[{name:'1',x:-.38,z:.38},{name:'2',x:.38,z:.38}]
 };
-const starter:Project={title:'Mạch LED mẫu',parts:[{id:'esp1',kind:'esp32',x:-2.7,z:-.25},{id:'bread1',kind:'breadboard',x:1.6,z:-.25},{id:'r1',kind:'resistor',x:1.05,z:-.1},{id:'led1',kind:'led',x:2.15,z:-.1}],wires:[{from:'esp1:GPIO2',to:'r1:1'},{from:'r1:2',to:'led1:A'},{from:'led1:K',to:'esp1:GND'}],gpioHigh:false};
+const starter:Project={title:'Mạch LED mẫu',parts:[{id:'esp1',kind:'esp32',x:-2.7,z:-.25},{id:'bread1',kind:'breadboard',x:1.6,z:-.25},{id:'r1',kind:'resistor',x:1.05,z:-.1},{id:'led1',kind:'led',x:2.15,z:-.1}],wires:[{from:'esp1:J1-04',to:'r1:1'},{from:'r1:2',to:'led1:A'},{from:'led1:K',to:'esp1:J1-01'}],gpioHigh:false};
 const empty:Project={title:'Mạch mới',parts:[],wires:[],gpioHigh:false};
+// Preserve existing users' saved LED circuits when switching from 4 virtual pins to real board header IDs.
+function migrateLegacyWires(p:Project):Project {
+ const map:Record<string,string>={GPIO2:'J1-04',GPIO4:'J3-11',GND:'J1-01','3V3':'J1-02'};
+ const convert=(id:string)=>{
+   const ix=id.lastIndexOf(':'); if(ix<0)return id;
+   const part=p.parts.find(a=>a.id===id.slice(0,ix));
+   const old=id.slice(ix+1);
+   return part?.kind==='esp32'&&map[old]?`${part.id}:${map[old]}`:id;
+ };
+ return {...p,wires:p.wires.map(w=>({from:convert(w.from),to:convert(w.to)}))};
+}
 // Visual collision and mounting rules. These are not electrical netlist rules.
 function overlaps(a:Part,b:Part,pad=0){
- const width=(k:Kind)=>k==='breadboard'?3.25:k==='esp32'?2.18:k==='resistor'?1.38:1.15;
- const depth=(k:Kind)=>k==='breadboard'?1.75:k==='esp32'?1.24:.82;
+ const width=(k:Kind)=>k==='breadboard'?3.25:k==='esp32'?2.65:k==='resistor'?1.38:1.15;
+ const depth=(k:Kind)=>k==='breadboard'?1.75:k==='esp32'?1.55:.82;
  return Math.abs(a.x-b.x)<(width(a.kind)+width(b.kind))/2+pad && Math.abs(a.z-b.z)<(depth(a.kind)+depth(b.kind))/2+pad;
 }
 function isOnBreadboard(part:Part,parts:Part[]){
@@ -39,7 +52,7 @@ function fixBoardCollision(project:Project):Project{
    for(const esp of parts.filter(p=>p.kind==='esp32')){
      if(overlaps(board,esp,.12)){
        const dx=esp.x-board.x;
-       const desired=(3.25+2.18)/2+.28;
+       const desired=(3.25+2.65)/2+.28;
        esp.x=board.x+(dx<=0?-desired:desired);
      }
    }
@@ -47,47 +60,23 @@ function fixBoardCollision(project:Project):Project{
  return {...project,parts};
 }
 function validProject(data:unknown): data is Project {if(!data||typeof data!=='object')return false;const p=data as Project;return Array.isArray(p.parts)&&Array.isArray(p.wires)&&typeof p.gpioHigh==='boolean'&&p.parts.length<150&&p.wires.length<500&&p.parts.every(v=>typeof v.id==='string'&&v.id.length<100&&v.kind in CATALOG&&Number.isFinite(v.x)&&Number.isFinite(v.z))&&p.wires.every(w=>typeof w.from==='string'&&typeof w.to==='string');}
-function findPower(project:Project){const links=new Map<string,Set<string>>();const add=(a:string,b:string)=>{if(!links.has(a))links.set(a,new Set());if(!links.has(b))links.set(b,new Set());links.get(a)!.add(b);links.get(b)!.add(a)};for(const w of project.wires)add(w.from,w.to);for(const p of project.parts){if(p.kind==='resistor')add(`${p.id}:1`,`${p.id}:2`);}const reachable=(a:string,b:string)=>{const todo=[a],seen=new Set<string>();while(todo.length){const cur=todo.pop()!;if(cur===b)return true;if(seen.has(cur))continue;seen.add(cur);for(const v of links.get(cur)||[])todo.push(v)}return false};const esp=project.parts.find(p=>p.kind==='esp32');const leds=project.parts.filter(p=>p.kind==='led');const active=new Set<string>();if(esp&&project.gpioHigh){for(const led of leds){if(reachable(`${esp.id}:GPIO2`,`${led.id}:A`)&&reachable(`${led.id}:K`,`${esp.id}:GND`))active.add(led.id)}}return active;}
+function findPower(project:Project){const links=new Map<string,Set<string>>();const add=(a:string,b:string)=>{if(!links.has(a))links.set(a,new Set());if(!links.has(b))links.set(b,new Set());links.get(a)!.add(b);links.get(b)!.add(a)};for(const w of project.wires)add(w.from,w.to);for(const p of project.parts){if(p.kind==='resistor')add(`${p.id}:1`,`${p.id}:2`);}const reachable=(a:string,b:string)=>{const todo=[a],seen=new Set<string>();while(todo.length){const cur=todo.pop()!;if(cur===b)return true;if(seen.has(cur))continue;seen.add(cur);for(const v of links.get(cur)||[])todo.push(v)}return false};const esp=project.parts.find(p=>p.kind==='esp32');const leds=project.parts.filter(p=>p.kind==='led');const active=new Set<string>();if(esp&&project.gpioHigh){for(const led of leds){if(reachable(`${esp.id}:J1-04`,`${led.id}:A`)&&reachable(`${led.id}:K`,`${esp.id}:J1-01`))active.add(led.id)}}return active;}
 // 3D objects represent functional connector points, not a certified electrical CAD footprint.
 function Part3D({part,selectedPin,onPin,lit,selected,baseY}:{part:Part;selectedPin:string|null;onPin:(v:string)=>void;lit:boolean;selected:boolean;baseY:number}){
  const kind=part.kind;
- const w=kind==='breadboard'?3.25:kind==='esp32'?2.18:kind==='resistor'?1.38:1.15;
- const d=kind==='breadboard'?1.75:kind==='esp32'?1.24:.82;
+ const w=kind==='breadboard'?3.25:kind==='esp32'?2.65:kind==='resistor'?1.38:1.15;
+ const d=kind==='breadboard'?1.75:kind==='esp32'?1.55:.82;
  const pinMaterial='#d4ac65';
  return <group position={[part.x,baseY,part.z]}>
   {/* Component-specific detailed procedural 3D geometry. */}
-  {kind==='esp32'&&<>
-    <mesh castShadow receiveShadow><boxGeometry args={[w,.18,d]}/><meshStandardMaterial color="#0b3153" metalness={.25} roughness={.34}/></mesh>
-    <mesh position={[.18,.135,-.16]} castShadow><boxGeometry args={[.72,.13,.66]}/><meshStandardMaterial color="#cbd3de" metalness={.84} roughness={.26}/></mesh>
-    <mesh position={[-.62,.135,.04]} castShadow><boxGeometry args={[.48,.12,.4]}/><meshStandardMaterial color="#161c29" metalness={.2}/></mesh>
-    <mesh position={[-.98,.015,0]}><boxGeometry args={[.19,.15,.37]}/><meshStandardMaterial color="#c6d8e0" metalness={.8}/></mesh>
-    {Array.from({length:9},(_,i)=><group key={i}>
-      {[-1,1].map(side=><mesh key={side} position={[-.88+i*.22,.05,side*.56]}><boxGeometry args={[.105,.115,.095]}/><meshStandardMaterial color="#d8b566" metalness={.65}/></mesh>)}
-    </group>)}
-    {Array.from({length:5},(_,i)=><mesh key={i} position={[-.07+i*.085,.215,-.12]} rotation={[0,0,0]}><boxGeometry args={[.025,.008,.36]}/><meshStandardMaterial color="#607988"/></mesh>)}
-    {/* Female header rails + connector openings for recognizable development-board silhouette. */}
-    {[-.53,.53].map(side=><group key={`header-${side}`}>
-      <mesh position={[0,.135,side]}><boxGeometry args={[2.02,.19,.17]}/><meshStandardMaterial color="#111925" roughness={.55}/></mesh>
-      {Array.from({length:10},(_,i)=><mesh key={i} position={[-.87+i*.19,.238,side]} rotation={[-Math.PI/2,0,0]}>
-        <circleGeometry args={[.045,12]}/><meshBasicMaterial color="#354959"/>
-      </mesh>)}
-    </group>)}
-    <mesh position={[-1.098,.07,0]}><boxGeometry args={[.105,.04,.29]}/><meshStandardMaterial color="#708a9b" metalness={.85}/></mesh>
-    {Array.from({length:8},(_,i)=><mesh key={`chip-leg-${i}`} position={[-.62+i*.053,.21,.06]}>
-       <boxGeometry args={[.018,.01,.09]}/><meshStandardMaterial color="#bfc8d4" metalness={.75}/>
-    </mesh>)}
-    {/* Realistic silkscreen and PCB details: these are visual, not exact pin footprints. */}
-    <Text position={[-.15,.101,.36]} rotation={[-Math.PI/2,0,0]} fontSize={.14} color="#f0fff5" anchorX="center">ESP32-C3</Text>
-    <Text position={[.2,.217,-.17]} rotation={[-Math.PI/2,0,0]} fontSize={.09} color="#314a56" anchorX="center">ESPRESSIF</Text>
-    <Text position={[-.79,.103,-.31]} rotation={[-Math.PI/2,0,0]} fontSize={.065} color="#e8f7ed">PWR</Text>
-    {Array.from({length:8},(_,i)=><group key={`silk-${i}`}>
-      <Text position={[-.78+i*.215,.103,.43]} rotation={[-Math.PI/2,0,0]} fontSize={.068} color="#d5f8e3" anchorX="center">{['0','1','2','3','4','5','3V3','G'][i]}</Text>
-      <mesh position={[-.79+i*.22,.101,-.52]}><boxGeometry args={[.08,.004,.035]}/><meshBasicMaterial color="#d0dfdb"/></mesh>
-    </group>)}
-    {[[-.48,-.25],[-.48,.12],[.65,.32]].map(([x,z],i)=><mesh key={`smd-${i}`} position={[x,.109,z]}><boxGeometry args={[.10,.04,.07]}/><meshStandardMaterial color="#1d2932"/></mesh>)}
-    {[-.86,.86].map(x=>[-.45,.45].map(z=><mesh key={`${x}-${z}`} position={[x,.105,z]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.035,.052,16]}/><meshBasicMaterial color="#c4a85d" side={THREE.DoubleSide}/></mesh>))}
-    <mesh position={[-.76,.13,-.33]}><sphereGeometry args={[.065,12,12]}/><meshStandardMaterial color="#10d5fc" emissive="#10d5fc" emissiveIntensity={.65}/></mesh>
-  </>}
+  {kind==='esp32'&&<Esp32C3Board
+    selected={selected}
+    selectedPin={selectedPin?.startsWith(`${part.id}:`)?selectedPin.split(':')[1]:null}
+    onPin={pin=>onPin(`${part.id}:${pin}`)}
+    powerOn
+    rgb={lit?[0.05,0.5,1]:null}
+    showLabels
+  />}
   {kind==='breadboard'&&<>
     <mesh castShadow receiveShadow><boxGeometry args={[w,.19,d]}/><meshStandardMaterial color="#e8edf2" roughness={.8}/></mesh>
     <mesh position={[0,.103,0]}><boxGeometry args={[w-.13,.013,.28]}/><meshStandardMaterial color="#cfd5de"/></mesh>
@@ -122,15 +111,15 @@ function Part3D({part,selectedPin,onPin,lit,selected,baseY}:{part:Part;selectedP
     <mesh position={[0,.21,0]} castShadow><cylinderGeometry args={[.23,.23,.22,24]}/><meshStandardMaterial color="#7fa1bd" metalness={.3}/></mesh>
     {[-.31,.31].map(x=><mesh key={x} position={[x,-.055,.33]}><boxGeometry args={[.09,.11,.26]}/><meshStandardMaterial color={pinMaterial}/></mesh>)}
   </>}
-  <Text position={[0,.19,-d/2+.11]} rotation={[-Math.PI/2,0,0]} fontSize={kind==='esp32'?.155:.115} color={kind==='breadboard'?'#274456':'#effaff'} anchorX="center">{CATALOG[kind].name}</Text>
-  {PIN_DEF[kind].map(pin=>{const id=`${part.id}:${pin.name}`;return <group key={id} position={[pin.x,.22,pin.z]}>
+  {kind!=='esp32'&&<Text position={[0,.19,-d/2+.11]} rotation={[-Math.PI/2,0,0]} fontSize={.115} color={kind==='breadboard'?'#274456':'#effaff'} anchorX="center">{CATALOG[kind].name}</Text>}
+  {(kind==='esp32'?[]:PIN_DEF[kind]).map(pin=>{const id=`${part.id}:${pin.name}`;return <group key={id} position={[pin.x,.22,pin.z]}>
     <mesh userData={{pin:true}} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();onPin(id)}}>
       <cylinderGeometry args={[.072,.072,.072,16]}/>
       <meshStandardMaterial color={id===selectedPin?'#ffe08a':'#cfa966'} metalness={.65} roughness={.25} emissive={id===selectedPin?'#eab431':'#063e4e'} emissiveIntensity={id===selectedPin?1:.1}/>
     </mesh>
     {(selected||id===selectedPin)&&<Html center position={[0,.28,0]} style={{pointerEvents:'none'}}><span className="pin-label">{pin.name}</span></Html>}
   </group>})}
-  {selected&&<mesh position={[0,-.035,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[Math.max(w,d)*.58,Math.max(w,d)*.61,64]}/><meshBasicMaterial color="#38c7fa" toneMapped={false}/></mesh>}
+  {selected&&kind!=='esp32'&&<mesh position={[0,-.035,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[Math.max(w,d)*.58,Math.max(w,d)*.61,64]}/><meshBasicMaterial color="#38c7fa" toneMapped={false}/></mesh>}
  </group>;
 }
 function Wire3D({a,b,index,onDelete}:{a:[number,number,number];b:[number,number,number];index:number;onDelete:(n:number)=>void}){
@@ -149,7 +138,7 @@ function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteW
  const dragRef=useRef<string|null>(null);
  const ground=useMemo(()=>new THREE.Plane(new THREE.Vector3(0,1,0),0),[]);
  const hit=useMemo(()=>new THREE.Vector3(),[]);
- const positions=useMemo(()=>{const map=new Map<string,[number,number,number]>();for(const p of project.parts)for(const pin of PIN_DEF[p.kind])map.set(`${p.id}:${pin.name}`,[p.x+pin.x,componentHeight(p,project.parts)+.22,p.z+pin.z]);return map},[project.parts]);
+ const positions=useMemo(()=>{const map=new Map<string,[number,number,number]>();for(const p of project.parts)for(const pin of PIN_DEF[p.kind])map.set(`${p.id}:${pin.name}`,[p.x+pin.x,componentHeight(p,project.parts)+(p.kind==='esp32'?.16:.22),p.z+pin.z]);return map},[project.parts]);
  const active=findPower(project);
  const move=(e:ThreeEvent<PointerEvent>)=>{if(!dragRef.current)return;const point=e.ray.intersectPlane(ground,hit);if(point)onMove(dragRef.current,Math.max(-12,Math.min(12,Math.round(point.x*10)/10)),Math.max(-12,Math.min(12,Math.round(point.z*10)/10)))};
  const release=(e:ThreeEvent<PointerEvent>)=>{
@@ -158,8 +147,8 @@ function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteW
   const target=e.target as (EventTarget & {releasePointerCapture?:(pointerId:number)=>void}) | null;
   try {target?.releasePointerCapture?.(e.pointerId)} catch { /* Already released */ }
  };
- return <Canvas shadows gl={{antialias:true,alpha:false}} dpr={[1,2]} camera={{position:cameraMode==='top'?[0,13/zoom,.01]:[6.8/zoom,7.8/zoom,10/zoom],fov:40}}>
-   <color attach="background" args={['#f3f8fd']}/><ambientLight intensity={1.65}/><hemisphereLight args={['#ffffff','#c0d9e8',1.25]}/><directionalLight position={[5,11,7]} intensity={2.35} castShadow shadow-mapSize={[2048,2048]}/><directionalLight position={[-8,5,-5]} intensity={.9} color="#6acaff"/>
+ return <Canvas shadows gl={{antialias:true,alpha:false}} dpr={[1,2.5]} camera={{position:cameraMode==='top'?[0,13/zoom,.01]:[6.8/zoom,7.8/zoom,10/zoom],fov:40}}>
+   <color attach="background" args={['#f3f8fd']}/><ambientLight intensity={1.65}/><hemisphereLight args={['#ffffff','#c0d9e8',1.25]}/><directionalLight position={[5,11,7]} intensity={2.35} castShadow shadow-mapSize={[3072,3072]}/><directionalLight position={[-8,5,-5]} intensity={.9} color="#6acaff"/>
    {/* No grid: matte presentation surface without the checkerboard texture. */}
    <mesh position={[0,-.085,0]} receiveShadow><boxGeometry args={[17,.14,11]}/><meshStandardMaterial color="#e9f2fa" roughness={.88} metalness={.06}/></mesh>
    <mesh position={[0,-.006,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[16.9,10.9]}/><meshBasicMaterial color="#d6e8f6" transparent opacity={.10}/></mesh>
@@ -168,11 +157,11 @@ function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteW
     <Part3D part={p} baseY={componentHeight(p,project.parts)} selectedPin={selectedPin} onPin={onPin} selected={selectedPart===p.id} lit={active.has(p.id)}/>
    </group>)}
    {project.wires.map((w,i)=>{const a=positions.get(w.from),b=positions.get(w.to);return a&&b?<Wire3D key={`${w.from}-${w.to}-${i}`} a={a} b={b} index={i} onDelete={onDeleteWire}/>:null})}
-   <OrbitControls makeDefault enabled={!drag} enableRotate={false} enablePan enableZoom minDistance={3} maxDistance={26} enableDamping dampingFactor={.08}/>
+   <OrbitControls makeDefault enabled={!drag} enableRotate enablePan enableZoom minDistance={3} maxDistance={26} enableDamping dampingFactor={.08}/>
  </Canvas>;
 }
 export default function App(){
- const [project,setProject]=useState<Project>(()=>{try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw) as unknown;if(validProject(p))return fixBoardCollision(p)}}catch{}return fixBoardCollision(starter)});
+ const [project,setProject]=useState<Project>(()=>{try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw) as unknown;if(validProject(p))return fixBoardCollision(migrateLegacyWires(p))}}catch{}return fixBoardCollision(starter)});
  const [selectedPin,setSelectedPin]=useState<string|null>(null);const [selectedPart,setSelectedPart]=useState<string|null>(null);const [section,setSection]=useState<Section>('workspace');const [tab,setTab]=useState<Tab>('overview');const [search,setSearch]=useState('');const [message,setMessage]=useState('Nhấn một chân, sau đó nhấn chân thứ hai để nối dây.');const [running,setRunning]=useState(false);const [cameraMode,setCameraMode]=useState<'perspective'|'top'>('perspective');const [cameraRevision,setCameraRevision]=useState(0);const [zoom,setZoom]=useState(1);const [editorLarge,setEditorLarge]=useState(false);const [code,setCode]=useState('const int LED = 2;\n\nvoid setup() {\n  pinMode(LED, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(LED, HIGH);\n  delay(1000);\n  digitalWrite(LED, LOW);\n  delay(1000);\n}');
  const fileInput=useRef<HTMLInputElement>(null);const nextId=useRef(5);const active=findPower(project);
  useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(project))}catch{}},[project]);
@@ -204,11 +193,11 @@ export default function App(){
  },[selectedPart]);
  function reset(){setProject(empty);setSelectedPart(null);setSelectedPin(null);setRunning(false);setMessage('Đã tạo mạch trống mới.')}
  function saveFile(){const json=JSON.stringify({...project,format:'dkv-circuit-lab',version:3},null,2);const a=document.createElement('a');const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.href=url;a.download='DKV-Circuit-Lab-du-an.json';a.click();URL.revokeObjectURL(url);setMessage('Đã xuất file JSON; có thể chia sẻ mà không cần tài khoản.')}
- async function importFile(file?:File){if(!file)return;try{if(file.size>1024*1024)throw new Error('File vượt quá 1 MB.');const data:unknown=JSON.parse(await file.text());if(!validProject(data))throw new Error('Cấu trúc dự án không hợp lệ.');setProject(fixBoardCollision(data));setSelectedPart(null);setSelectedPin(null);setMessage('Đã nhập dự án thành công.')}catch(e){setMessage(e instanceof Error?e.message:'Không thể đọc file.')}}
+ async function importFile(file?:File){if(!file)return;try{if(file.size>1024*1024)throw new Error('File vượt quá 1 MB.');const data:unknown=JSON.parse(await file.text());if(!validProject(data))throw new Error('Cấu trúc dự án không hợp lệ.');setProject(fixBoardCollision(migrateLegacyWires(data)));setSelectedPart(null);setSelectedPin(null);setMessage('Đã nhập dự án thành công.')}catch(e){setMessage(e instanceof Error?e.message:'Không thể đọc file.')}}
  const catalog=(Object.keys(CATALOG) as Kind[]).filter(k=>CATALOG[k].name.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')));
  const selected=project.parts.find(p=>p.id===selectedPart);const pinEntries=selected?PIN_DEF[selected.kind]:PIN_DEF.esp32;
  return <div className="shell">
-  <header className="topbar"><div className="brand"><img className="brand-logo" src="/dkv-technology-logo.png?v=060" alt="DKV Technology – Đoàn Kiên Vũ"/><div><strong>DKV <span>CIRCUIT LAB</span></strong><small>3D ELECTRONICS WORKSPACE · VIỆT NAM</small></div></div><div className="top-actions"><span className="version">V0.7.0 · STUDIO</span><button className="icon-button" title="Lưu dự án ra file JSON" onClick={saveFile}><Download size={18}/></button><button className="primary" onClick={()=>{setRunning(!running);setMessage(!running?'Đã bật mô phỏng GPIO. Code trong ô ví dụ chưa được biên dịch.':'Đã dừng mô phỏng.')}}>{running?<><X size={16}/> Dừng</>:<><Play size={16} fill="currentColor"/> Chạy mô phỏng</>}</button></div></header>
+  <header className="topbar"><div className="brand"><img className="brand-logo" src="/dkv-technology-logo.png?v=060" alt="DKV Technology – Đoàn Kiên Vũ"/><div><strong>DKV <span>CIRCUIT LAB</span></strong><small>3D ELECTRONICS WORKSPACE · VIỆT NAM</small></div></div><div className="top-actions"><span className="version">V0.8.0 · 30-PIN 3D</span><button className="icon-button" title="Lưu dự án ra file JSON" onClick={saveFile}><Download size={18}/></button><button className="primary" onClick={()=>{setRunning(!running);setMessage(!running?'Đã bật mô phỏng GPIO. Code trong ô ví dụ chưa được biên dịch.':'Đã dừng mô phỏng.')}}>{running?<><X size={16}/> Dừng</>:<><Play size={16} fill="currentColor"/> Chạy mô phỏng</>}</button></div></header>
   <nav className="rail">
     <button className={section==='workspace'?'active':''} onClick={()=>setSection('workspace')}><Home/><span>Workspace</span></button>
     <button className={section==='parts'?'active':''} onClick={()=>setSection('parts')}><CircuitBoard/><span>Linh kiện</span></button>
@@ -221,7 +210,7 @@ export default function App(){
     <div className="catalog">{catalog.map(kind=><button key={kind} onClick={()=>add(kind)}><span className={`part-icon kind-${kind}`}>{CATALOG[kind].icon}</span><span><strong>{CATALOG[kind].name}</strong><small>{CATALOG[kind].subtitle}</small></span><span className="plus">+</span></button>)}</div>
     <div className="library-bottom"><strong><Zap size={16}/> WORKSPACE 3D</strong><p>Thêm linh kiện, kéo trên bàn 3D, chọn hai chân để nối dây. Nhấn vào dây để xóa.</p></div>
   </aside>
-  <main className="workspace"><div className="workspace-heading"><div><span className="crumb">DKV / CIRCUIT EDITOR</span><h1>{project.title}</h1><p>Lắp mạch 3D · Không tài khoản · Lưu trên trình duyệt</p></div><div className="scene-counter"><Box size={17}/>{project.parts.length} linh kiện · {project.wires.length} dây</div></div><div className="canvas-wrap"><Scene key={`${cameraMode}-${cameraRevision}-${zoom}`} cameraMode={cameraMode} zoom={zoom} project={project} onPin={onPin} selectedPin={selectedPin} onMove={(id,x,z)=>setProject(p=>fixBoardCollision({...p,parts:p.parts.map(a=>a.id===id?{...a,x,z}:a)}))} onSelect={setSelectedPart} selectedPart={selectedPart} onDeleteWire={i=>{setProject(p=>({...p,wires:p.wires.filter((_,n)=>n!==i)}));setMessage('Đã xóa dây.')}}/><div className="canvas-hint"><Info size={15}/> Click để chọn · Kéo linh kiện để di chuyển · Cuộn để zoom · Giữ chuột phải để dịch bàn</div><div className="scene-watermark"><strong>DKV</strong> 3D CIRCUIT EDITOR <span>● VISUAL MODE</span></div><div className="scene-tools"><button title="Thu nhỏ" onClick={()=>setZoom(v=>Math.max(.65,Math.round((v-.15)*100)/100))}><ZoomOut size={17}/></button><span className="tool-separator"/><button title="Phóng to" onClick={()=>setZoom(v=>Math.min(2.2,Math.round((v+.15)*100)/100))}><ZoomIn size={17}/></button><span className="tool-separator"/><button title="Đặt lại góc nhìn" onClick={()=>{setZoom(1);setCameraMode('perspective');setCameraRevision(v=>v+1)}}><RotateCcw size={17}/></button><button title="Góc nhìn từ trên" onClick={()=>setCameraMode(v=>v==='top'?'perspective':'top')}><Box size={17}/></button><span className="tool-separator"/><button title="Hủy chọn dây/chân" onClick={()=>setSelectedPin(null)}><Unplug size={17}/></button><button title="Xóa linh kiện đã chọn" disabled={!selectedPart} onClick={removePart}><Trash2 size={17}/></button></div></div><div className="notice"><Info size={16}/><span>{message}</span></div></main>
+  <main className="workspace"><div className="workspace-heading"><div><span className="crumb">DKV / CIRCUIT EDITOR</span><h1>{project.title}</h1><p>Lắp mạch 3D · Không tài khoản · Lưu trên trình duyệt</p></div><div className="scene-counter"><Box size={17}/>{project.parts.length} linh kiện · {project.wires.length} dây</div></div><div className="canvas-wrap"><Scene key={`${cameraMode}-${cameraRevision}-${zoom}`} cameraMode={cameraMode} zoom={zoom} project={project} onPin={onPin} selectedPin={selectedPin} onMove={(id,x,z)=>setProject(p=>fixBoardCollision({...p,parts:p.parts.map(a=>a.id===id?{...a,x,z}:a)}))} onSelect={setSelectedPart} selectedPart={selectedPart} onDeleteWire={i=>{setProject(p=>({...p,wires:p.wires.filter((_,n)=>n!==i)}));setMessage('Đã xóa dây.')}}/><div className="canvas-hint"><Info size={15}/> Click để chọn · Kéo linh kiện để di chuyển · Xoay 360° ở vùng trống · Cuộn để zoom</div><div className="scene-watermark"><strong>DKV</strong> 3D CIRCUIT EDITOR <span>● VISUAL MODE</span></div><div className="scene-tools"><button title="Thu nhỏ" onClick={()=>setZoom(v=>Math.max(.65,Math.round((v-.15)*100)/100))}><ZoomOut size={17}/></button><span className="tool-separator"/><button title="Phóng to" onClick={()=>setZoom(v=>Math.min(2.2,Math.round((v+.15)*100)/100))}><ZoomIn size={17}/></button><span className="tool-separator"/><button title="Đặt lại góc nhìn" onClick={()=>{setZoom(1);setCameraMode('perspective');setCameraRevision(v=>v+1)}}><RotateCcw size={17}/></button><button title="Góc nhìn từ trên" onClick={()=>setCameraMode(v=>v==='top'?'perspective':'top')}><Box size={17}/></button><span className="tool-separator"/><button title="Hủy chọn dây/chân" onClick={()=>setSelectedPin(null)}><Unplug size={17}/></button><button title="Xóa linh kiện đã chọn" disabled={!selectedPart} onClick={removePart}><Trash2 size={17}/></button></div></div><div className="notice"><Info size={16}/><span>{message}</span></div></main>
   <aside className="inspector">
     <div className="inspector-tabs" role="tablist" aria-label="Thông tin linh kiện">
       <button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>TỔNG QUAN</button>
@@ -240,8 +229,8 @@ export default function App(){
         <div className="metric"><span>Tổng linh kiện trong mạch</span><b>{project.parts.length}</b></div>
         <div className="metric"><span>Dây nối</span><b>{project.wires.length}</b></div>
       </>}
-      {tab==='pins'&&<><p className="intro-paragraph">{selected?`Danh sách điểm nối mô phỏng cho ${CATALOG[selected.kind].name}`:'Hãy chọn một linh kiện trong bàn 3D để xem các chân của linh kiện đó.'}</p><table className="pin-table"><thead><tr><th>CHÂN</th><th>CHỨC NĂNG</th></tr></thead><tbody>{pinEntries.map(pin=><tr key={pin.name}><td><span className="pin-dot"/>{pin.name}</td><td>{pin.name==='GND'?'Mass / GND':pin.name==='3V3'?'Nguồn 3,3 V':pin.name.startsWith('GPIO')?'Tín hiệu GPIO':pin.name==='A'?'Anode (+)':pin.name==='K'?'Cathode (−)':'Điểm kết nối'}</td></tr>)}</tbody></table><p className="note-text">Danh sách chân hiện là mô hình chức năng rút gọn, không phải pinout hoàn chỉnh của bo mạch thương mại.</p></>}
-      {tab==='example'&&<><p className="intro-paragraph">Mạch mẫu được đặt sẵn để bạn thao tác, không phải bài học.</p><div className="feature-row"><span className="feature-icon"><Activity size={19}/></span><div><b>Mạch LED dùng GPIO2</b><small>GPIO2 → điện trở → LED → GND</small></div></div><button className="soft action-wide" onClick={()=>{setProject(fixBoardCollision(starter));setSelectedPart(null);setSelectedPin(null);setMessage('Đã tải mạch LED mẫu.')}}>Tải mạch mẫu lên bàn 3D</button><p className="note-text">Mạch mẫu chỉ hỗ trợ điều khiển GPIO giả lập.</p></>}
+      {tab==='pins'&&<><p className="intro-paragraph">{selected?`Danh sách điểm nối mô phỏng cho ${CATALOG[selected.kind].name}`:'Hãy chọn một linh kiện trong bàn 3D để xem các chân của linh kiện đó.'}</p><table className="pin-table"><thead><tr><th>CHÂN</th><th>CHỨC NĂNG</th></tr></thead><tbody>{pinEntries.map(pin=><tr key={pin.name}><td><span className="pin-dot"/>{pin.name}</td><td>{(selected?.kind==='esp32'||!selected)&&C3_PIN_BY_ID.has(pin.name)?`${C3_PIN_BY_ID.get(pin.name)!.label} · ${C3_PIN_BY_ID.get(pin.name)!.fn.join(', ')||C3_PIN_BY_ID.get(pin.name)!.kind}`:pin.name==='GND'?'Mass / GND':pin.name==='3V3'?'Nguồn 3,3 V':pin.name==='A'?'Anode (+)':pin.name==='K'?'Cathode (−)':'Điểm kết nối'}</td></tr>)}</tbody></table><p className="note-text">ESP32-C3: 30 chân J1/J3 theo bảng của Espressif. Vị trí vật lý đang trong giai đoạn đối chiếu bản vẽ; không dùng làm footprint PCB.</p></>}
+      {tab==='example'&&<><p className="intro-paragraph">Mạch mẫu được đặt sẵn để bạn thao tác, không phải bài học.</p><div className="feature-row"><span className="feature-icon"><Activity size={19}/></span><div><b>Mạch LED dùng GPIO2</b><small>J1-04 (GPIO2) → điện trở → LED → J1-01 (GND)</small></div></div><button className="soft action-wide" onClick={()=>{setProject(fixBoardCollision(starter));setSelectedPart(null);setSelectedPin(null);setMessage('Đã tải mạch LED mẫu.')}}>Tải mạch mẫu lên bàn 3D</button><p className="note-text">Mạch mẫu chỉ hỗ trợ điều khiển GPIO giả lập.</p></>}
       {tab==='specs'&&<><p className="intro-paragraph">Thông tin đang áp dụng cho mô hình linh kiện trong DKV Circuit Lab.</p><div className="metric"><span>Loại</span><b>{selected?CATALOG[selected.kind].name:'ESP32-C3'}</b></div><div className="metric"><span>Điểm kết nối đang hỗ trợ</span><b>{selected?PIN_DEF[selected.kind].length:PIN_DEF.esp32.length}</b></div><div className="metric"><span>Hiển thị</span><b>3D</b></div><div className="metric"><span>Phân tích điện</span><b>Logic GPIO</b></div><p className="note-text">Kích thước, bố trí chân và thông số ở đây chưa dùng cho thiết kế PCB hoặc xác nhận phần cứng thật.</p></>}
     </div>
     <div className={`code-panel ${editorLarge?'expanded':''}`}>
