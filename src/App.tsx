@@ -94,12 +94,17 @@ function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteW
  const positions=useMemo(()=>{const map=new Map<string,[number,number,number]>();for(const p of project.parts)for(const pin of PIN_DEF[p.kind])map.set(`${p.id}:${pin.name}`,[p.x+pin.x,.39,p.z+pin.z]);return map},[project.parts]);
  const active=findPower(project);
  const move=(e:ThreeEvent<PointerEvent>)=>{if(!dragRef.current)return;const point=e.ray.intersectPlane(ground,hit);if(point)onMove(dragRef.current,Math.max(-12,Math.min(12,Math.round(point.x*10)/10)),Math.max(-12,Math.min(12,Math.round(point.z*10)/10)))};
- const release=(e:ThreeEvent<PointerEvent>)=>{dragRef.current=null;setDrag(null);try{e.target.releasePointerCapture(e.pointerId)}catch{}};
+ const release=(e:ThreeEvent<PointerEvent>)=>{
+  dragRef.current=null;
+  setDrag(null);
+  const target=e.target as (EventTarget & {releasePointerCapture?:(pointerId:number)=>void}) | null;
+  try {target?.releasePointerCapture?.(e.pointerId)} catch { /* Already released */ }
+ };
  return <Canvas shadows camera={{position:cameraMode==='top'?[0,14,.01]:[6.4,8.5,10.5],fov:43}} onPointerMissed={()=>onSelect('')}>
    <color attach="background" args={['#06192d']}/><ambientLight intensity={1.35}/><hemisphereLight args={['#9ddaff','#162d47',1.0]}/><directionalLight position={[4,9,5]} intensity={2.1} castShadow shadow-mapSize={[1024,1024]}/>
    <Grid args={[30,30]} cellColor="#174263" sectionColor="#2379a7" sectionSize={2} cellSize={.5} infiniteGrid fadeDistance={25} fadeStrength={1.5}/>
    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.025,0]} onClick={()=>onSelect('')}><planeGeometry args={[100,100]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
-   {project.parts.map(p=><group key={p.id} onPointerDown={e=>{if((e.object.userData as {pin?:boolean}).pin||e.button!==0)return;e.stopPropagation();dragRef.current=p.id;setDrag(p.id);onSelect(p.id);e.target.setPointerCapture(e.pointerId)}} onPointerMove={move} onPointerUp={release} onPointerCancel={release}>
+   {project.parts.map(p=><group key={p.id} onPointerDown={e=>{if((e.object.userData as {pin?:boolean}).pin||e.button!==0)return;e.stopPropagation();dragRef.current=p.id;setDrag(p.id);onSelect(p.id);(e.target as (EventTarget & {setPointerCapture?:(pointerId:number)=>void}) | null)?.setPointerCapture?.(e.pointerId)}} onPointerMove={move} onPointerUp={release} onPointerCancel={release}>
     <Part3D part={p} selectedPin={selectedPin} onPin={onPin} selected={selectedPart===p.id} lit={active.has(p.id)}/>
    </group>)}
    {project.wires.map((w,i)=>{const a=positions.get(w.from),b=positions.get(w.to);return a&&b?<Wire3D key={`${w.from}-${w.to}-${i}`} a={a} b={b} index={i} onDelete={onDeleteWire}/>:null})}
