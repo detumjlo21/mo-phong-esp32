@@ -1,12 +1,32 @@
-# DKV Circuit Lab 3D — V0.4.1
+# DKV Circuit Lab 3D — V0.5.0 (Visual Upgrade)
 
-Bản sửa lỗi build TypeScript của V0.4.0: xử lý an toàn `setPointerCapture` và `releasePointerCapture` ở `src/App.tsx`.
+Bản cập nhật **giao diện và mô hình 3D** dành cho DKV Technology. Website tiếng Việt, không đăng nhập, không bài học, deploy Vite lên Vercel từ GitHub.
 
-## Triển khai
+## Thay đổi V0.5
 
-1. Thay thế toàn bộ file trong repository bằng nội dung thư mục này.
-2. **Xóa riêng** các file cũ còn sót trên GitHub, đặc biệt `src/supabase.ts` và thư mục `supabase/` nếu còn. GitHub Upload Files không tự xóa file cũ.
-3. Commit vào nhánh main để Vercel build lại.
-4. Kiểm tra `npm run build`.
+- ESP32-C3: bổ sung nhãn PCB, ký hiệu chân tham khảo, chi tiết linh kiện và pad.
+- Breadboard: bổ sung rãnh giữa, lỗ và ký hiệu đường nguồn, số cột.
+- Pin kết nối: thu nhỏ điểm chọn, dùng vật liệu kim loại thay vì các cầu xanh lớn.
+- Dây: thêm phần đầu nối kim loại và vỏ màu.
+- 3D scene: thêm mặt bàn, ánh sáng bổ sung, camera nhìn gần hơn, overlay trạng thái.
+- Giao diện: không gian bàn lắp mạch rộng hơn, giảm kích thước header / sidebar.
+- Giữ logo DKV nền trong suốt; giữ thao tác di chuyển, nối/xóa dây, lưu và nhập/xuất JSON.
+- Không có Supabase/Auth/lesson.
 
-Lưu ý: Đây là mô phỏng logic cơ bản, không thực thi firmware ESP32 thực.
+**Giới hạn quan trọng:** Các mô hình 3D hiện là hình học dựng theo phong cách linh kiện thực, **không phải bản sao đúng kích thước/cấu trúc chân của sản phẩm cụ thể**. Chỉ có 4 chân tương tác trên ESP32-C3. Breadboard chưa mô phỏng liên thông hàng lỗ. Code Arduino được hiển thị nhưng **chưa biên dịch hay chạy ESP32 firmware**. Mô phỏng LED vẫn là kiểm tra kết nối logic đơn giản.
+
+## Chạy dự án
+
+```bash
+npm install
+npm run dev
+npm run build
+```
+
+Mã nguồn đã qua kiểm tra cú pháp TypeScript TSX (không có diagnostics cú pháp); chưa xác nhận build đầy đủ vì môi trường đóng gói không cài được dependencies. Vui lòng kiểm tra Vercel Build Logs.
+
+## Cập nhật GitHub
+
+Cập nhật **toàn bộ nội dung thư mục này vào thư mục gốc repository**. Lưu ý: GitHub Upload Files không tự xóa file cũ không có trong bản mới. Hãy xóa `src/supabase.ts`, thư mục `supabase/`, các component cũ nếu vẫn tồn tại trong repository; những file đó không có trong ZIP. Không tải thư mục ngoài cùng như một thư mục con.
+
+Giữ cấu hình Vercel: Framework Vite, Build `npm run build`, Output `dist`.

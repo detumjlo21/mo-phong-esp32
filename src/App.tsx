@@ -33,14 +33,24 @@ function Part3D({part,selectedPin,onPin,lit,selected}:{part:Part;selectedPin:str
  return <group position={[part.x,0.17,part.z]}>
   {/* Component-specific detailed procedural 3D geometry. */}
   {kind==='esp32'&&<>
-    <mesh castShadow receiveShadow><boxGeometry args={[w,.18,d]}/><meshStandardMaterial color="#075460" metalness={.35} roughness={.43}/></mesh>
-    <mesh position={[.18,.135,-.16]} castShadow><boxGeometry args={[.72,.13,.66]}/><meshStandardMaterial color="#a9bec7" metalness={.78} roughness={.3}/></mesh>
+    <mesh castShadow receiveShadow><boxGeometry args={[w,.18,d]}/><meshStandardMaterial color="#073a38" metalness={.25} roughness={.34}/></mesh>
+    <mesh position={[.18,.135,-.16]} castShadow><boxGeometry args={[.72,.13,.66]}/><meshStandardMaterial color="#bbcbd4" metalness={.84} roughness={.26}/></mesh>
     <mesh position={[-.62,.135,.04]} castShadow><boxGeometry args={[.48,.12,.4]}/><meshStandardMaterial color="#161c29" metalness={.2}/></mesh>
     <mesh position={[-.98,.015,0]}><boxGeometry args={[.19,.15,.37]}/><meshStandardMaterial color="#c6d8e0" metalness={.8}/></mesh>
     {Array.from({length:9},(_,i)=><group key={i}>
       {[-1,1].map(side=><mesh key={side} position={[-.88+i*.22,.05,side*.56]}><boxGeometry args={[.105,.115,.095]}/><meshStandardMaterial color="#d8b566" metalness={.65}/></mesh>)}
     </group>)}
     {Array.from({length:5},(_,i)=><mesh key={i} position={[-.07+i*.085,.215,-.12]} rotation={[0,0,0]}><boxGeometry args={[.025,.008,.36]}/><meshStandardMaterial color="#607988"/></mesh>)}
+    {/* Realistic silkscreen and PCB details: these are visual, not exact pin footprints. */}
+    <Text position={[-.15,.101,.36]} rotation={[-Math.PI/2,0,0]} fontSize={.14} color="#f0fff5" anchorX="center">ESP32-C3</Text>
+    <Text position={[.2,.217,-.17]} rotation={[-Math.PI/2,0,0]} fontSize={.09} color="#314a56" anchorX="center">ESPRESSIF</Text>
+    <Text position={[-.79,.103,-.31]} rotation={[-Math.PI/2,0,0]} fontSize={.065} color="#e8f7ed">PWR</Text>
+    {Array.from({length:8},(_,i)=><group key={`silk-${i}`}>
+      <Text position={[-.78+i*.215,.103,.43]} rotation={[-Math.PI/2,0,0]} fontSize={.068} color="#d5f8e3" anchorX="center">{['0','1','2','3','4','5','3V3','G'][i]}</Text>
+      <mesh position={[-.79+i*.22,.101,-.52]}><boxGeometry args={[.08,.004,.035]}/><meshBasicMaterial color="#d0dfdb"/></mesh>
+    </group>)}
+    {[[-.48,-.25],[-.48,.12],[.65,.32]].map(([x,z],i)=><mesh key={`smd-${i}`} position={[x,.109,z]}><boxGeometry args={[.10,.04,.07]}/><meshStandardMaterial color="#1d2932"/></mesh>)}
+    {[-.86,.86].map(x=>[-.45,.45].map(z=><mesh key={`${x}-${z}`} position={[x,.105,z]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.035,.052,16]}/><meshBasicMaterial color="#c4a85d" side={THREE.DoubleSide}/></mesh>))}
     <mesh position={[-.76,.13,-.33]}><sphereGeometry args={[.065,12,12]}/><meshStandardMaterial color="#10d5fc" emissive="#10d5fc" emissiveIntensity={.65}/></mesh>
   </>}
   {kind==='breadboard'&&<>
@@ -48,6 +58,12 @@ function Part3D({part,selectedPin,onPin,lit,selected}:{part:Part;selectedPin:str
     <mesh position={[0,.103,0]}><boxGeometry args={[w-.13,.013,.28]}/><meshStandardMaterial color="#cfd5de"/></mesh>
     {Array.from({length:140},(_,i)=>{const column=i%20,row=Math.floor(i/20);const z=(-.7+row*.23)+(row>2?.12:0);return <mesh key={i} position={[-1.44+column*.151,.106,z]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[.035,8]}/><meshBasicMaterial color="#4d626b"/></mesh>})}
     {[-.79,.79].map((z,i)=><group key={i}><mesh position={[0,.111,z]}><boxGeometry args={[3,.013,.018]}/><meshBasicMaterial color={i===0?'#df6e69':'#4675b8'}/></mesh></group>)}
+    <mesh position={[0,.112,-.06]}><boxGeometry args={[3.05,.008,.065]}/><meshStandardMaterial color="#b8c1c9"/></mesh>
+    {[-.83,.83].map(z=>Array.from({length:20},(_,i)=><mesh key={`${z}-${i}`} position={[-1.44+i*.151,.116,z]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[.034,10]}/><meshBasicMaterial color="#4d626b"/></mesh>))}
+    {Array.from({length:20},(_,i)=><Text key={`col-${i}`} position={[-1.44+i*.151,.114,.61]} rotation={[-Math.PI/2,0,0]} fontSize={.07} color="#6b7c89" anchorX="center">{i+1}</Text>)}
+    <Text position={[0,.115,-.79]} rotation={[-Math.PI/2,0,0]} fontSize={.085} color="#c44951">+ POWER</Text>
+    <Text position={[0,.115,.84]} rotation={[-Math.PI/2,0,0]} fontSize={.085} color="#3978a9">- GND</Text>
+    {[[-1.5,-.7],[1.5,-.7],[-1.5,.7],[1.5,.7]].map(([x,z],i)=><mesh key={i} position={[x,.112,z]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.065,.085,16]}/><meshBasicMaterial color="#a2acb8"/></mesh>)}
   </>}
   {kind==='led'&&<>
     <mesh position={[0,.05,0]} castShadow><cylinderGeometry args={[.34,.34,.12,32]}/><meshStandardMaterial color="#253e51" metalness={.25}/></mesh>
@@ -74,8 +90,8 @@ function Part3D({part,selectedPin,onPin,lit,selected}:{part:Part;selectedPin:str
   <Text position={[0,.19,-d/2+.11]} rotation={[-Math.PI/2,0,0]} fontSize={kind==='esp32'?.155:.115} color={kind==='breadboard'?'#274456':'#effaff'} anchorX="center">{CATALOG[kind].name}</Text>
   {PIN_DEF[kind].map(pin=>{const id=`${part.id}:${pin.name}`;return <group key={id} position={[pin.x,.22,pin.z]}>
     <mesh userData={{pin:true}} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();onPin(id)}}>
-      <sphereGeometry args={[.10,14,14]}/>
-      <meshStandardMaterial color={id===selectedPin?'#ffe08a':'#6bd9ff'} emissive={id===selectedPin?'#facc47':'#016b91'} emissiveIntensity={id===selectedPin?1.2:.38}/>
+      <cylinderGeometry args={[.072,.072,.072,16]}/>
+      <meshStandardMaterial color={id===selectedPin?'#ffe08a':'#cfa966'} metalness={.65} roughness={.25} emissive={id===selectedPin?'#eab431':'#063e4e'} emissiveIntensity={id===selectedPin?1:.1}/>
     </mesh>
     {(selected||id===selectedPin)&&<Html center position={[0,.28,0]} style={{pointerEvents:'none'}}><span className="pin-label">{pin.name}</span></Html>}
   </group>})}
@@ -84,7 +100,14 @@ function Part3D({part,selectedPin,onPin,lit,selected}:{part:Part;selectedPin:str
 }
 function Wire3D({a,b,index,onDelete}:{a:[number,number,number];b:[number,number,number];index:number;onDelete:(n:number)=>void}){
  const geometry=useMemo(()=>{const height=.75+Math.min(1,Math.hypot(a[0]-b[0],a[2]-b[2])*.16);const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(...a),new THREE.Vector3(a[0],height,a[2]),new THREE.Vector3(b[0],height,b[2]),new THREE.Vector3(...b)],false,'centripetal');return new THREE.TubeGeometry(curve,42,.035,8,false)},[a,b]);
- return <mesh geometry={geometry} onClick={e=>{e.stopPropagation();onDelete(index)}}><meshStandardMaterial color={['#22c9fb','#ffb454','#30deb2','#a1a3f5'][index%4]} roughness={.35}/></mesh>;
+ const color=['#19b5e9','#ffb454','#2cce9f','#9e96f7'][index%4];
+ return <group onClick={e=>{e.stopPropagation();onDelete(index)}}>
+   <mesh geometry={geometry}><meshStandardMaterial color={color} roughness={.36} metalness={.08}/></mesh>
+   {[a,b].map((pt,i)=><group key={i} position={pt}>
+      <mesh position={[0,.055,0]}><cylinderGeometry args={[.09,.09,.18,16]}/><meshStandardMaterial color={color} roughness={.3}/></mesh>
+      <mesh position={[0,.16,0]}><cylinderGeometry args={[.052,.052,.10,12]}/><meshStandardMaterial color="#aebec7" metalness={.8}/></mesh>
+   </group>)}
+ </group>;
 }
 function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteWire,cameraMode}:{project:Project;onPin:(id:string)=>void;selectedPin:string|null;onMove:(id:string,x:number,z:number)=>void;onSelect:(id:string)=>void;selectedPart:string|null;onDeleteWire:(index:number)=>void;cameraMode:'perspective'|'top'}){
  const [drag,setDrag]=useState<string|null>(null);
@@ -100,9 +123,11 @@ function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteW
   const target=e.target as (EventTarget & {releasePointerCapture?:(pointerId:number)=>void}) | null;
   try {target?.releasePointerCapture?.(e.pointerId)} catch { /* Already released */ }
  };
- return <Canvas shadows camera={{position:cameraMode==='top'?[0,14,.01]:[6.4,8.5,10.5],fov:43}} onPointerMissed={()=>onSelect('')}>
-   <color attach="background" args={['#06192d']}/><ambientLight intensity={1.35}/><hemisphereLight args={['#9ddaff','#162d47',1.0]}/><directionalLight position={[4,9,5]} intensity={2.1} castShadow shadow-mapSize={[1024,1024]}/>
-   <Grid args={[30,30]} cellColor="#174263" sectionColor="#2379a7" sectionSize={2} cellSize={.5} infiniteGrid fadeDistance={25} fadeStrength={1.5}/>
+ return <Canvas shadows camera={{position:cameraMode==='top'?[0,13,.01]:[4.7,7.6,9.3],fov:43}} onPointerMissed={()=>onSelect('')}>
+   <color attach="background" args={['#09182b']}/><ambientLight intensity={1.65}/><hemisphereLight args={['#e4f3ff','#1c3852',1.3]}/><directionalLight position={[5,11,7]} intensity={2.8} castShadow shadow-mapSize={[2048,2048]}/><directionalLight position={[-8,5,-5]} intensity={.9} color="#6acaff"/>
+   <Grid args={[30,30]} cellColor="#24415e" sectionColor="#306485" sectionSize={2} cellSize={.5} infiniteGrid fadeDistance={22} fadeStrength={1.7}/>
+   <mesh position={[0,-.085,0]} receiveShadow><boxGeometry args={[17,.14,11]}/><meshStandardMaterial color="#122b43" roughness={.74} metalness={.22}/></mesh>
+   <mesh position={[0,-.006,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[16.9,10.9]}/><meshBasicMaterial color="#12344f" transparent opacity={.16}/></mesh>
    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.025,0]} onClick={()=>onSelect('')}><planeGeometry args={[100,100]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
    {project.parts.map(p=><group key={p.id} onPointerDown={e=>{if((e.object.userData as {pin?:boolean}).pin||e.button!==0)return;e.stopPropagation();dragRef.current=p.id;setDrag(p.id);onSelect(p.id);(e.target as (EventTarget & {setPointerCapture?:(pointerId:number)=>void}) | null)?.setPointerCapture?.(e.pointerId)}} onPointerMove={move} onPointerUp={release} onPointerCancel={release}>
     <Part3D part={p} selectedPin={selectedPin} onPin={onPin} selected={selectedPart===p.id} lit={active.has(p.id)}/>
@@ -125,7 +150,7 @@ export default function App(){
  const catalog=(Object.keys(CATALOG) as Kind[]).filter(k=>CATALOG[k].name.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')));
  const selected=project.parts.find(p=>p.id===selectedPart);const pinEntries=selected?PIN_DEF[selected.kind]:PIN_DEF.esp32;
  return <div className="shell">
-  <header className="topbar"><div className="brand"><img className="brand-logo" src="/dkv-technology-logo.png?v=040" alt="DKV Technology – Đoàn Kiên Vũ"/><div><strong>DKV <span>CIRCUIT LAB</span></strong><small>3D ELECTRONICS WORKSPACE · VIỆT NAM</small></div></div><div className="top-actions"><span className="version">3D V0.4.0 · 3D WORKSPACE</span><button className="icon-button" title="Lưu dự án ra file JSON" onClick={saveFile}><Download size={18}/></button><button className="primary" onClick={()=>{setRunning(!running);setMessage(!running?'Đã bật mô phỏng GPIO. Code trong ô ví dụ chưa được biên dịch.':'Đã dừng mô phỏng.')}}>{running?<><X size={16}/> Dừng</>:<><Play size={16} fill="currentColor"/> Chạy mô phỏng</>}</button></div></header>
+  <header className="topbar"><div className="brand"><img className="brand-logo" src="/dkv-technology-logo.png?v=040" alt="DKV Technology – Đoàn Kiên Vũ"/><div><strong>DKV <span>CIRCUIT LAB</span></strong><small>3D ELECTRONICS WORKSPACE · VIỆT NAM</small></div></div><div className="top-actions"><span className="version">V0.5.0 · VISUAL UPGRADE</span><button className="icon-button" title="Lưu dự án ra file JSON" onClick={saveFile}><Download size={18}/></button><button className="primary" onClick={()=>{setRunning(!running);setMessage(!running?'Đã bật mô phỏng GPIO. Code trong ô ví dụ chưa được biên dịch.':'Đã dừng mô phỏng.')}}>{running?<><X size={16}/> Dừng</>:<><Play size={16} fill="currentColor"/> Chạy mô phỏng</>}</button></div></header>
   <nav className="rail">
     <button className={section==='workspace'?'active':''} onClick={()=>setSection('workspace')}><Home/><span>Workspace</span></button>
     <button className={section==='parts'?'active':''} onClick={()=>setSection('parts')}><CircuitBoard/><span>Linh kiện</span></button>
@@ -138,7 +163,7 @@ export default function App(){
     <div className="catalog">{catalog.map(kind=><button key={kind} onClick={()=>add(kind)}><span className={`part-icon kind-${kind}`}>{CATALOG[kind].icon}</span><span><strong>{CATALOG[kind].name}</strong><small>{CATALOG[kind].subtitle}</small></span><span className="plus">+</span></button>)}</div>
     <div className="library-bottom"><strong><Zap size={16}/> WORKSPACE 3D</strong><p>Thêm linh kiện, kéo trên bàn 3D, chọn hai chân để nối dây. Nhấn vào dây để xóa.</p></div>
   </aside>
-  <main className="workspace"><div className="workspace-heading"><div><span className="crumb">DKV / 3D WORKSPACE</span><h1>{project.title}</h1><p>Lắp mạch 3D · Không tài khoản · Lưu trên trình duyệt</p></div><div className="scene-counter"><Box size={17}/>{project.parts.length} linh kiện · {project.wires.length} dây</div></div><div className="canvas-wrap"><Scene key={`${cameraMode}-${cameraRevision}`} cameraMode={cameraMode} project={project} onPin={onPin} selectedPin={selectedPin} onMove={(id,x,z)=>setProject(p=>({...p,parts:p.parts.map(a=>a.id===id?{...a,x,z}:a)}))} onSelect={setSelectedPart} selectedPart={selectedPart} onDeleteWire={i=>{setProject(p=>({...p,wires:p.wires.filter((_,n)=>n!==i)}));setMessage('Đã xóa dây.')}}/><div className="canvas-hint"><ZoomIn size={15}/> Kéo linh kiện · Chọn 2 chân để nối · Xoay / Zoom camera</div><div className="scene-tools"><button title="Góc nhìn từ trên" onClick={()=>setCameraMode(v=>v==='top'?'perspective':'top')}><Box size={16}/></button><button title="Đặt lại camera" onClick={()=>setCameraRevision(v=>v+1)}><RotateCcw size={16}/></button><button title="Hủy chọn chân" onClick={()=>setSelectedPin(null)}><Unplug size={16}/></button><button title="Xóa linh kiện đã chọn" disabled={!selectedPart} onClick={removePart}><Trash2 size={16}/></button><button title="Tạo mạch mới" onClick={reset}><RotateCcw size={16}/></button></div></div><div className="notice"><Info size={16}/><span>{message}</span></div></main>
+  <main className="workspace"><div className="workspace-heading"><div><span className="crumb">DKV / CIRCUIT EDITOR</span><h1>{project.title}</h1><p>Lắp mạch 3D · Không tài khoản · Lưu trên trình duyệt</p></div><div className="scene-counter"><Box size={17}/>{project.parts.length} linh kiện · {project.wires.length} dây</div></div><div className="canvas-wrap"><Scene key={`${cameraMode}-${cameraRevision}`} cameraMode={cameraMode} project={project} onPin={onPin} selectedPin={selectedPin} onMove={(id,x,z)=>setProject(p=>({...p,parts:p.parts.map(a=>a.id===id?{...a,x,z}:a)}))} onSelect={setSelectedPart} selectedPart={selectedPart} onDeleteWire={i=>{setProject(p=>({...p,wires:p.wires.filter((_,n)=>n!==i)}));setMessage('Đã xóa dây.')}}/><div className="canvas-hint"><ZoomIn size={15}/> Chọn chân để nối dây · Giữ chuột kéo linh kiện · Cuộn để zoom</div><div className="scene-watermark"><strong>DKV</strong> 3D CIRCUIT EDITOR <span>● VISUAL MODE</span></div><div className="scene-tools"><button title="Góc nhìn từ trên" onClick={()=>setCameraMode(v=>v==='top'?'perspective':'top')}><Box size={16}/></button><button title="Đặt lại camera" onClick={()=>setCameraRevision(v=>v+1)}><RotateCcw size={16}/></button><button title="Hủy chọn chân" onClick={()=>setSelectedPin(null)}><Unplug size={16}/></button><button title="Xóa linh kiện đã chọn" disabled={!selectedPart} onClick={removePart}><Trash2 size={16}/></button><button title="Tạo mạch mới" onClick={reset}><RotateCcw size={16}/></button></div></div><div className="notice"><Info size={16}/><span>{message}</span></div></main>
   <aside className="inspector"><div className="status-top"><div><strong>CIRCUIT WORKSPACE</strong><small>KHÔNG CẦN TÀI KHOẢN</small></div><span className="status-dot"/></div><div className="tabs"><button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>TỔNG QUAN</button><button className={tab==='pins'?'active':''} onClick={()=>setTab('pins')}>CHÂN</button><button className={tab==='code'?'active':''} onClick={()=>setTab('code')}>CODE</button></div>
    <div className="inspector-body">{tab==='pins'?<><h2>CHÂN LINH KIỆN</h2><p>{selected?CATALOG[selected.kind].name:'Chọn một linh kiện để xem chân kết nối.'}</p><table><thead><tr><th>CHÂN</th><th>CHỨC NĂNG</th></tr></thead><tbody>{pinEntries.map(pin=><tr key={pin.name}><td><span className="pin-dot"/>{pin.name}</td><td>{pin.name==='GND'?'Nối mass':pin.name==='3V3'?'Nguồn 3,3 V':pin.name==='GPIO2'||pin.name==='GPIO4'?'Chân GPIO':pin.name==='A'?'Cực dương':pin.name==='K'?'Cực âm':'Điểm kết nối'}</td></tr>)}</tbody></table><p className="muted">Các chân breadboard hiện chỉ là điểm nối minh họa; chưa có mô hình liên thông lỗ cắm.</p></>:tab==='overview'?<><h2>TỔNG QUAN</h2><p>Bàn lắp mạch điện tử 3D dành cho cộng đồng kỹ thuật Việt Nam. Tự chọn linh kiện và kết nối chân để thử logic mạch.</p><div className="metric"><span>Linh kiện trong mạch</span><b>{project.parts.length}</b></div><div className="metric"><span>Số dây kết nối</span><b>{project.wires.length}</b></div><div className="metric"><span>LED đang sáng</span><b>{active.size}</b></div><div className="warn">Mô phỏng logic GPIO đơn giản; chưa giải mạch điện và chưa thực thi firmware ESP32. Không dùng kết quả này để xác nhận an toàn phần cứng.</div></>:<><h2>CODE EDITOR</h2><p>Mã Arduino để tham khảo/chỉnh sửa; bản này chưa biên dịch hoặc chạy firmware ESP32.</p><textarea spellCheck={false} value={code} onChange={e=>setCode(e.target.value)}/><button className="soft" onClick={()=>setMessage('Code đã được chỉnh sửa trong trình duyệt. Chưa hỗ trợ chạy firmware.')}>Lưu bản nháp code</button></>}</div>
    <div className="inspector-bottom"><div className="control-title"><Zap size={17}/> THỬ MÔ PHỎNG GPIO</div><label className="gpio-toggle"><span>GPIO2 HIGH</span><input type="checkbox" checked={project.gpioHigh} onChange={e=>setProject(p=>({...p,gpioHigh:e.target.checked}))}/><span className="toggle-track"/></label><p className="muted">LED sáng khi nối GPIO2 → điện trở → LED(A) và LED(K) → GND, rồi bật GPIO2 HIGH.</p><div className="control-title"><FolderOpen size={17}/> DỰ ÁN CỦA BẠN</div><div className="save-actions"><button onClick={()=>{try{localStorage.setItem(KEY,JSON.stringify(project));setMessage('Đã lưu vào trình duyệt.')}catch{setMessage('Trình duyệt không cho phép lưu.')}}}><Save size={15}/> Lưu</button><button onClick={()=>fileInput.current?.click()}><FileUp size={15}/> Nhập</button><button onClick={saveFile}><Download size={15}/> Xuất</button></div><input ref={fileInput} type="file" hidden accept=".json,application/json" onChange={e=>{void importFile(e.target.files?.[0]);e.target.value=''}}/></div>
