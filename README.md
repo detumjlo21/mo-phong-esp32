@@ -1,16 +1,23 @@
-# DKV Circuit Lab 3D V0.6.0 — Workspace Fix
+# DKV Circuit Lab 3D — V0.6.1
 
-## Sửa lỗi và cải tiến
-- Bỏ hoàn toàn nền caro/lưới trong vùng 3D.
-- ESP32-C3 và breadboard không được chồng hình khi di chuyển; dự án đã lưu được tự chỉnh nếu hai bo đè lên nhau.
-- LED, điện trở, biến trở và nút nhấn được nâng lên mặt breadboard khi nằm trong vùng lắp đặt.
-- Điểm nối dây đồng bộ độ cao khi gắn trên breadboard.
-- Bấm chọn linh kiện, nhấn **Delete/Backspace** hoặc nút **Xóa linh kiện** ở inspector để xóa, tự động xóa dây liên quan.
-- Thêm chi tiết chân header, pad PCB và breadboard, giảm độ dày dây.
-- Logo DKV và giao diện xanh được giữ nguyên; không bài học/đăng nhập/Supabase.
+## Sửa lỗi nút thùng rác
 
-### Giới hạn
-Mô hình dựng procedural Three.js, chưa phải CAD chính xác như board thật, không tự chạy firmware ESP32. Hình breadboard chưa có liên thông điện thật. Cơ chế gắn linh kiện lên breadboard chỉ là vị trí hiển thị 3D.
+- Chọn linh kiện bằng một cú nhấn chuột.
+- Sau khi nhả chuột hoặc rời bàn làm việc 3D, linh kiện **vẫn được chọn**.
+- Nút **Xóa linh kiện** trên inspector và thùng rác ở góc canvas vẫn khả dụng.
+- Có thể xóa bằng phím Delete / Backspace nếu không nhập văn bản.
+- Chỉ bỏ chọn khi xóa linh kiện, tạo dự án mới, hoặc chọn linh kiện khác.
 
-## Deploy
-Giải nén nội dung root lên GitHub và xóa file src/supabase.ts trên repository nếu còn. Vercel build với `npm run build`, output `dist`.
+### Nguyên nhân
+
+Bản cũ dùng `Canvas.onPointerMissed` và `onClick` trên mặt phẳng nền để tự hủy chọn. Kết hợp pointer capture khi kéo thả, chúng có thể làm mất trạng thái được chọn ngay sau khi nhả chuột. V0.6.1 loại bỏ các thao tác hủy chọn tự động này và dùng thêm `onClick` để xác nhận lựa chọn.
+
+### Cập nhật
+
+1. Thay nội dung repository GitHub bằng nội dung thư mục này.
+2. Xóa các file Supabase cũ nếu repository vẫn còn (upload ZIP không tự xóa file cũ).
+3. Commit, chờ Vercel báo Ready và tải lại trang.
+
+### Trạng thái kiểm thử
+
+Đã kiểm tra đối chiếu thay đổi trong mã nguồn. **Chưa xác nhận bản build Vite / hoạt động trong browser** tại môi trường này.
