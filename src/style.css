@@ -30,3 +30,14 @@
 @media(max-width:1200px){.shell{grid-template-columns:62px 195px minmax(320px,1fr)275px}}
 @media(max-width:960px){.shell{grid-template-columns:62px 200px minmax(300px,1fr);grid-template-rows:76px minmax(500px,1fr)360px 27px}}
 @media(max-width:650px){.scene-watermark{font-size:8px;gap:5px}.scene-watermark strong{font-size:14px}.scene-watermark span{font-size:7px}.canvas-hint{max-width:76%;font-size:9px}}
+
+/* V0.6: matte, grid-free circuit workbench and prominent deletion controls */
+.canvas-wrap {background:radial-gradient(ellipse at 48% 32%,#173a54 0%,#071c33 68%,#061428 100%)}
+.scene-counter {border-color:#286180}
+.scene-tools button:disabled {opacity:.24;cursor:not-allowed}
+.selected-part-action{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#12334d;border:1px solid #3478a2;border-radius:10px;padding:10px;margin:0 0 12px}
+.selected-part-action span{min-width:0;display:flex;flex-direction:column;gap:4px}
+.selected-part-action b{font-size:11px;color:#c5f0ff}
+.selected-part-action small{font-size:10px;color:#83b8d7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.selected-part-action button{display:flex;align-items:center;gap:5px;border:1px solid #b45f70;background:#3b253b;color:#ffdce5;padding:9px 10px;border-radius:8px;font-size:10px;font-weight:800;white-space:nowrap}
+.selected-part-action button:hover{background:#623044;border-color:#ed91a0}
