@@ -41,3 +41,80 @@
 .selected-part-action small{font-size:10px;color:#83b8d7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
 .selected-part-action button{display:flex;align-items:center;gap:5px;border:1px solid #b45f70;background:#3b253b;color:#ffdce5;padding:9px 10px;border-radius:8px;font-size:10px;font-weight:800;white-space:nowrap}
 .selected-part-action button:hover{background:#623044;border-color:#ed91a0}
+
+
+/* V0.6.2 — White + Blue professional electronics workspace.
+   Applied at end to preserve all existing responsive styles and functionality. */
+:root { color: #193753; background: #f4f8fd; color-scheme: light; }
+body { background: #f4f8fd; }
+.shell { background: #f4f8fd; }
+.topbar { background: linear-gradient(105deg,#fff,#eff7ff 62%,#e5f2ff); border-bottom: 1px solid #d6e5f2; box-shadow: 0 2px 14px #184f7e12; }
+.brand strong { color: #153c62; }
+.brand strong span { color: #007bd0; }
+.brand small, .version { color: #6186a5; }
+.brand-logo { filter: drop-shadow(0 3px 6px #0a6fc72a); }
+.top-actions button { background:#fff; color:#215576; border-color:#cbdff1; }
+.top-actions .primary { background:linear-gradient(125deg,#0871ce,#11b6ef); border-color:#168dd8; color:#fff; box-shadow:0 5px 16px #1883d331; }
+.rail { background:#fafdff; border-right:1px solid #d6e5f2; }
+.rail button { color:#547a9a; }
+.rail button:hover { background:#e7f3ff; color:#006aba; }
+.rail button.active { background:#e1f1ff; color:#0076cb; border-color:#a8d7f9; }
+.library,.inspector { background:#fff; color:#1c415e; }
+.library { border-right:1px solid #d8e8f5; }
+.inspector { border-left:1px solid #d8e8f5; }
+.panel-title { color:#1e496b; }
+.search { background:#f7fbff; border-color:#d5e5f1; color:#327fab; }
+.search input { color:#143d5c; }
+.search input::placeholder { color:#8ca9bc; }
+.micro-title { color:#7896ac; }
+.catalog button { background:#fff; color:#254561; border-color:#dceaf3; box-shadow:0 2px 7px #1d6b9c0a; }
+.catalog button:hover { background:#edf8ff; border-color:#67bafa; }
+.catalog small { color:#7896ab; }
+.part-icon { background:#e5f5ff; color:#1187d6; }
+.kind-led { background:#ffebed; color:#d84f60; }
+.kind-resistor { background:#fff5e1; color:#ae7c29; }
+.kind-potentiometer { background:#e2f7fe; color:#0889ae; }
+.plus { color:#008ee5; }
+.library-bottom { background:#f0f8ff; border-color:#cde6fa; }
+.library-bottom strong { color:#1375b2; }
+.library-bottom p { color:#6988a3; }
+.workspace { background:#f4f8fc; }
+.crumb { color:#008bd7; }
+.workspace-heading h1 { color:#143f61; }
+.workspace-heading p { color:#7597ac; }
+.scene-counter { background:#fff; color:#507b99; border-color:#cfe4f5; }
+.canvas-wrap { background:linear-gradient(150deg,#fbfdff,#edf6ff); border-color:#c6dfef; box-shadow:0 10px 28px #255c8a16; }
+.canvas-hint { background:#ffffffed; border-color:#cfe4f2; color:#587994; }
+.scene-tools { background:#ffffffed; border-color:#cfe1ee; box-shadow:0 3px 12px #184a7422; }
+.scene-tools button { color:#377da5; }
+.scene-tools button:hover { background:#e7f3ff; color:#007cce; }
+.notice { background:#f0f9ff; border-color:#cde7f8; color:#397596; }
+.status-top { background:#f7fbff; border-color:#d7e8f6; }
+.status-top small { color:#7696ab; }
+.status-dot { box-shadow:0 0 0 5px #e7f9f4; }
+.tabs { border-bottom-color:#d9e6f1; }
+.tabs button { color:#7190a7; }
+.tabs button.active { color:#067bc0; border-bottom-color:#139ce9; }
+.inspector-body { background:#fff; border-color:#d7e7f4; }
+.inspector-body h2 { color:#214968; }
+.inspector-body p,.muted { color:#7792a6; }
+.inspector-body th { color:#7d9aae; }
+.inspector-body td { border-top-color:#e8f1f7; }
+.inspector-body textarea { background:#f7fbff; border-color:#cddfed; color:#1c5275; }
+.metric { color:#607e96; border-bottom-color:#e0edf6; }
+.metric b { color:#007ac2; }
+.warn { background:#eff8ff; border-color:#cce4f5; color:#4a7a9c; }
+.control-title svg { color:#0789d4; }
+.toggle-track { background:#c1d6e5; }
+.save-actions button,.soft { background:#f7fbff; border-color:#cde3f2; color:#327196; }
+.save-actions button:hover,.soft:hover { color:#007bc5; border-color:#6bb8ed; }
+footer { background:#eff7fe; border-top:1px solid #d8e8f4; color:#718fa6; }
+.pin-label { background:#fff; border-color:#a9d9ef; color:#235071; box-shadow:0 2px 5px #23557722; }
+.scene-watermark { color:#6387a1; text-shadow:none; }
+.scene-watermark strong { color:#20618a; }
+.scene-watermark span { background:#eafaf6; color:#178d74; border-color:#a5ddd1; }
+.selected-part-action { background:#edf8ff; border-color:#a9d9f4; }
+.selected-part-action b { color:#22648a; }
+.selected-part-action small { color:#688fa8; }
+.selected-part-action button { background:#fff2f3; border-color:#f2bcc5; color:#b93451; }
+.selected-part-action button:hover { background:#ffe4e9; border-color:#e6879a; }

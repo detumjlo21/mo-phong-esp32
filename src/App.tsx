@@ -159,10 +159,10 @@ function Scene({project,onPin,selectedPin,onMove,onSelect,selectedPart,onDeleteW
   try {target?.releasePointerCapture?.(e.pointerId)} catch { /* Already released */ }
  };
  return <Canvas shadows camera={{position:cameraMode==='top'?[0,13,.01]:[6.8,7.8,10],fov:40}}>
-   <color attach="background" args={['#09182b']}/><ambientLight intensity={1.65}/><hemisphereLight args={['#e4f3ff','#1c3852',1.3]}/><directionalLight position={[5,11,7]} intensity={2.8} castShadow shadow-mapSize={[2048,2048]}/><directionalLight position={[-8,5,-5]} intensity={.9} color="#6acaff"/>
+   <color attach="background" args={['#f3f8fd']}/><ambientLight intensity={1.65}/><hemisphereLight args={['#ffffff','#c0d9e8',1.25]}/><directionalLight position={[5,11,7]} intensity={2.35} castShadow shadow-mapSize={[2048,2048]}/><directionalLight position={[-8,5,-5]} intensity={.9} color="#6acaff"/>
    {/* No grid: matte presentation surface without the checkerboard texture. */}
-   <mesh position={[0,-.085,0]} receiveShadow><boxGeometry args={[17,.14,11]}/><meshStandardMaterial color="#10283f" roughness={.88} metalness={.06}/></mesh>
-   <mesh position={[0,-.006,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[16.9,10.9]}/><meshBasicMaterial color="#0c2238" transparent opacity={.09}/></mesh>
+   <mesh position={[0,-.085,0]} receiveShadow><boxGeometry args={[17,.14,11]}/><meshStandardMaterial color="#e9f2fa" roughness={.88} metalness={.06}/></mesh>
+   <mesh position={[0,-.006,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[16.9,10.9]}/><meshBasicMaterial color="#d6e8f6" transparent opacity={.10}/></mesh>
    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.025,0]}><planeGeometry args={[100,100]}/><meshBasicMaterial transparent opacity={0} depthWrite={false}/></mesh>
    {project.parts.map(p=><group key={p.id} onPointerDown={e=>{if((e.object.userData as {pin?:boolean}).pin||e.button!==0)return;e.stopPropagation();dragRef.current=p.id;setDrag(p.id);onSelect(p.id);(e.target as (EventTarget & {setPointerCapture?:(pointerId:number)=>void}) | null)?.setPointerCapture?.(e.pointerId)}} onPointerMove={move} onPointerUp={release} onPointerCancel={release} onClick={e=>{if((e.object.userData as {pin?:boolean}).pin)return;e.stopPropagation();onSelect(p.id)}}>
     <Part3D part={p} baseY={componentHeight(p,project.parts)} selectedPin={selectedPin} onPin={onPin} selected={selectedPart===p.id} lit={active.has(p.id)}/>

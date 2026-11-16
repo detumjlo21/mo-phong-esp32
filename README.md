@@ -1,23 +1,13 @@
-# DKV Circuit Lab 3D — V0.6.1
+# DKV Circuit Lab 3D V0.6.2 — White & Blue Theme
 
-## Sửa lỗi nút thùng rác
+Bản cập nhật trực tiếp từ V0.6.1: đổi giao diện sang trắng/xanh dương, đổi mặt bàn 3D sang nền sáng trơn không caro; giữ logo DKV, chức năng chọn/xóa, kéo thả, nối dây, nhập/xuất JSON. Không có Supabase/Auth/bài học.
 
-- Chọn linh kiện bằng một cú nhấn chuột.
-- Sau khi nhả chuột hoặc rời bàn làm việc 3D, linh kiện **vẫn được chọn**.
-- Nút **Xóa linh kiện** trên inspector và thùng rác ở góc canvas vẫn khả dụng.
-- Có thể xóa bằng phím Delete / Backspace nếu không nhập văn bản.
-- Chỉ bỏ chọn khi xóa linh kiện, tạo dự án mới, hoặc chọn linh kiện khác.
+## Cập nhật
+1. Thay thế **toàn bộ** nội dung repository bằng nội dung thư mục này (không tạo thêm thư mục lồng nhau).
+2. Xóa file `src/supabase.ts` và thư mục `supabase` trên GitHub nếu còn sót ở bản cũ; chỉ upload file mới không tự xóa file cũ.
+3. Commit lên GitHub để Vercel build. Nếu build lỗi, xem thông báo ở Vercel Build Logs.
 
-### Nguyên nhân
+## Kiểm tra
+`npm install` rồi `npm run build` và `npm run dev` để thử trên máy. Màu và bố cục đã chỉnh trong `src/style.css`, scene 3D trong `src/App.tsx`.
 
-Bản cũ dùng `Canvas.onPointerMissed` và `onClick` trên mặt phẳng nền để tự hủy chọn. Kết hợp pointer capture khi kéo thả, chúng có thể làm mất trạng thái được chọn ngay sau khi nhả chuột. V0.6.1 loại bỏ các thao tác hủy chọn tự động này và dùng thêm `onClick` để xác nhận lựa chọn.
-
-### Cập nhật
-
-1. Thay nội dung repository GitHub bằng nội dung thư mục này.
-2. Xóa các file Supabase cũ nếu repository vẫn còn (upload ZIP không tự xóa file cũ).
-3. Commit, chờ Vercel báo Ready và tải lại trang.
-
-### Trạng thái kiểm thử
-
-Đã kiểm tra đối chiếu thay đổi trong mã nguồn. **Chưa xác nhận bản build Vite / hoạt động trong browser** tại môi trường này.
+Website vẫn là mô phỏng logic, chưa thực thi firmware ESP32 C/C++ hoặc giải mạch điện thực.
